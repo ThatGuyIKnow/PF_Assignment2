@@ -18,12 +18,14 @@ class PlaceOrderPage(AbstractPage):
         customer = self.records.find_customer(name, search_in_name=True)
 
         product = self.ask_for_product()
+        if product is None:
+            return 0
 
         quantity = self.ask_for_quantity(product)
 
         new_member_type = None
         if customer is None:
-            signed_for, customer = self.ask_for_membership(name)
+            new_member_type, customer = self.ask_for_membership(name)
             order = Order(customer, product, quantity, new_member_type == 'V')
         else:
             order = Order(customer, product, quantity)
@@ -62,17 +64,34 @@ class PlaceOrderPage(AbstractPage):
 
 
     def ask_for_product(self):
-        product_name = input('Please enter product name: ')
+        product_name = input('Please enter product name or ID: ')
         product = self.records.find_product(product_name, search_in_name=True)
-        while product is None:
-            product_name = input('Product could not be found. Please enter a valid product name: ')
-            product = self.records.find_product(product_name, search_in_name=True)
 
-            if product.stock == 0:
-                print("Product is out of stock. Please choose another product.")
-                product = None
+        if product is None:
+            product = self.records.find_product(product_name)
+
+        if not (product is None or self.validate_product(product)):
+            return None
+
+        while product is None:
+            product_name = input('Product could not be found. Please enter a valid product name or ID: ')
+            
+            product = self.records.find_product(product_name, search_in_name=True)
+            if product is None:
+                product = self.records.find_product(product_name)
+
+            if not (product is None or self.validate_product(product)):
+                return None
         return product
 
+    def validate_product(self, product: Product):
+        if product.stock == 0:
+            print("Product is out of stock. Please choose another product.")
+            return False
+        if product.price is None or product.price <= 0:
+            print(f'Product has an invalid pricing of {product.price}. Returning to menu...')
+            return False
+        return True
 
     def ask_for_quantity(self, product: Product):
         quantity = input('Enter the amount you would like to purchase: ')

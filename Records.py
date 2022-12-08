@@ -1,4 +1,5 @@
 import os
+from Bundle import Bundle
 from Customer import Customer
 from Member import Member
 from Order import Order
@@ -12,7 +13,8 @@ class Records():
         self.product_file_path = product_file_path
         try:
             self.customers = self.read_customers()
-            self.products = self.read_products()
+            self.products = None
+            self.read_products()
         except Exception as e:
             raise IOError(e) from e
         self.next_customer_id = self.get_last_customer_id() + 1
@@ -37,14 +39,31 @@ class Records():
 
     def read_products(self):
         products = self.csv_reader(self.product_file_path)
-        create_product = lambda args: self.__create_product(*args)
-        return list(map(create_product, products))
+        product_list = [self.__create_product(*args) for args in products if args[0][0] == 'P']
+        self.products = product_list
 
+        products = self.csv_reader(self.product_file_path)
+        bundle_list = [self.__create_bundle(args) for args in products if args[0][0] == 'B']
+        self.products += bundle_list
+        print(bundle_list[0].products)
+        
 
     def __create_product(self, id: str, name: str, price: str, quantity: str):
-        price = float(price)
+        if not price.strip() == '':
+            price = float(price)
+        else:
+            price = None
         quantity = int(quantity)
         return Product(id, name, price, quantity)
+
+    def __create_bundle(self, args):
+        id = args[0]
+        name = args[1]
+        products = list(map(self.find_product, args[2:-1]))
+        products = [{'id': p.id, 'price': p.price} for p in products]
+        stock = int(args[-1])
+        print(args[2:-1])
+        return Bundle(id, name, products, stock)
 
     def csv_reader(self, file_name):
         try:
@@ -54,21 +73,15 @@ class Records():
         except FileNotFoundError as e:
             print('Customer data file not found. Exiting...')
             raise e
-
+    
     def find_customer(self, query: str, search_in_name: bool = False):
-        customer = self.find_in_customers_or_products(query, search_in_name, self.customers)
-        if customer is None:
-            return None
-        return customer
-
+        return self.find_in_customers_or_products(query, search_in_name, self.customers)
+    
     def find_product(self, query: str, search_in_name: bool = False):
-        product = self.find_in_customers_or_products(query, search_in_name, self.products)
-        if product is None:
-            return None
-        return product
+        return self.find_in_customers_or_products(query, search_in_name, self.products)
 
     def find_in_customers_or_products(self, query: str, search_in_name: bool, arr_list):
-        field = lambda x: x.name if search_in_name else lambda x: x.id
+        field = (lambda x: x.name) if search_in_name else (lambda x: x.id)
         try:
             index = list(map(field, arr_list)).index(query)
             return arr_list[index]
@@ -83,7 +96,13 @@ class Records():
     def list_products(self, format_string='{0}, {1}, {2}, {3}'):
         print('PRODUCTS: ')
         for product in self.products:
-            print(format_string.format(product.id, product.name, product.price, product.stock))
+            if product.id.startswith('P'):
+                print(format_string.format(product.id, product.name, product.price, product.stock))
+            elif product.id.startswith('B'):
+                product_ids = [p['id'] for p in product.products]
+                product_ids = ', '.join(product_ids)
+                print(format_string.format(product.id, product.name, product_ids, product.stock))
+                
 
 
     def get_last_customer_id(self):
@@ -150,9 +169,20 @@ class Records():
             with open(temp_file_path, 'w', encoding='utf-8') as f_new:
                 for line in f:
                     if line.startswith(product.id):
-                        id, name, price, stock = product
-                        f_new.write(f'{id}, {name}, {price}, {stock}\n')
+                        self.write_product_to_file(product, f_new)
                     else:
-                        f_new.write(line+'\n')
+                        f_new.write(line)
         
         os.replace(temp_file_path, self.product_file_path)
+
+    
+    def write_product_to_file(self, product: Product, file):
+        if product.id.startswith('P'):
+            id, name, price, stock = product
+            file.write(f'{id}, {name}, {price}, {stock}\n')
+        elif product.id.startswith('B'):
+            id, name, products, stock = product
+            product_ids = [p['id'] for p in products]
+            products = ', '.join(product_ids)
+            print(product_ids)
+            file.write(f'{id}, {name}, {products}, {stock}\n')
