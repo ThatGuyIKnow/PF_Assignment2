@@ -10,8 +10,11 @@ class Records():
     def __init__(self, customer_file_path: str, product_file_path: str) -> None:
         self.customer_file_path = customer_file_path
         self.product_file_path = product_file_path
-        self.customers = self.read_customers()
-        self.products = self.read_products()
+        try:
+            self.customers = self.read_customers()
+            self.products = self.read_products()
+        except Exception as e:
+            raise IOError(e) from e
         self.next_customer_id = self.get_last_customer_id() + 1
         self.next_product_id = self.get_last_product_id() + 1
 

@@ -42,32 +42,23 @@ class PlaceOrderPage(AbstractPage):
     
     def ask_for_membership(self, name: str):
         member_choice = input('We can see that you are not a member. Would you like to sign up for membership (Y/N): ').upper()
+
+        while member_choice not in ['Y', 'N']:
+            member_choice = input('Invalid answer. Please enter (Y/N): ').upper()
+
+
         if member_choice == 'N':
             return 'C', self.records.create_new_customer(name, 'C')
 
         print('Please select with membership type you would like to sign up for.')
         member_type = input('Regular Member or VIP (M/V): ').upper()
-
+        while member_type not in ['M', 'V']:
+            member_type = input('Invalid answer. Please enter (M/V): ').upper()
+        
         customer = self.records.create_new_customer(name, member_type)
 
         print('Thank you for signing up!')
         return member_type, customer
-
-    def print_order(self, order: Order):
-        discount_rate, total_cost = order.customer.get_discount(order.total_price)
-
-        print(order, order.customer, order.product)
-        print(
-            f'''
-            {order.customer.name} purchase {order.quantity} x {order.product.name}
-            Unit Price:     {order.product.price} (AUD)
-            {order.customer.name} gets a discount of {discount_rate} %
-            ''')
-        
-        if order.purchased_VIP:
-            print(f'\t    Membership price:   {VIPMember.membership_cost} (AUD)\n')
-            total_cost += VIPMember.membership_cost
-        print(f'\t    Total price:    {total_cost} (AUD)')
 
 
     def ask_for_product(self):
@@ -100,3 +91,19 @@ class PlaceOrderPage(AbstractPage):
             return True
         except:
             return False
+
+    def print_order(self, order: Order):
+        discount_rate, total_cost = order.customer.get_discount(order.total_price)
+
+        print(order, order.customer, order.product)
+        print(
+            f'''
+            {order.customer.name} purchase {order.quantity} x {order.product.name}
+            Unit Price:     {order.product.price} (AUD)
+            {order.customer.name} gets a discount of {discount_rate} %
+            ''')
+        
+        if order.purchased_VIP:
+            print(f'\t    Membership price:   {VIPMember.membership_cost} (AUD)\n')
+            total_cost += VIPMember.membership_cost
+        print(f'\t    Total price:    {total_cost} (AUD)')
