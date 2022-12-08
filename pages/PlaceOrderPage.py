@@ -1,6 +1,7 @@
 
 from Customer import Customer
 from Order import Order
+from Product import Product
 from Records import Records
 from VIPMember import VIPMember
 from pages.AbstractPage import AbstractPage
@@ -16,15 +17,9 @@ class PlaceOrderPage(AbstractPage):
         name = input('Please enter your name: ')
         customer = self.records.find_customer(name, search_in_name=True)
 
-        product_name = input('Please enter product name: ')
-        product = self.records.find_product(product_name, search_in_name=True)
+        product = self.ask_for_product()
 
-        quantity = input('Enter the amount you would like to purchase: ')
-        quantity = int(quantity)
-
-        if product.stock < quantity:
-            print(f'Sorry. There is only {product.stock} product in stock.')
-            return 0
+        quantity = self.ask_for_quantity(product)
 
         new_member_type = None
         if customer is None:
@@ -73,3 +68,35 @@ class PlaceOrderPage(AbstractPage):
             print(f'\t    Membership price:   {VIPMember.membership_cost} (AUD)\n')
             total_cost += VIPMember.membership_cost
         print(f'\t    Total price:    {total_cost} (AUD)')
+
+
+    def ask_for_product(self):
+        product_name = input('Please enter product name: ')
+        product = self.records.find_product(product_name, search_in_name=True)
+        while product is None:
+            product_name = input('Product could not be found. Please enter a valid product name: ')
+            product = self.records.find_product(product_name, search_in_name=True)
+
+            if product.stock == 0:
+                print("Product is out of stock. Please choose another product.")
+                product = None
+        return product
+
+
+    def ask_for_quantity(self, product: Product):
+        quantity = input('Enter the amount you would like to purchase: ')
+        
+        while not (self.validate_quantity(quantity) and int(quantity) <= product.stock):
+            quantity = input(f'{quantity} is an invalid amount. There are {product.stock} {product.name}(s) in stock. Please enter a valid amount: ')
+        quantity = int(quantity)
+            
+        return quantity
+
+    def validate_quantity(self, quantity: str):
+        try:
+            quantity = int(quantity)
+            if quantity < 1:
+                return False
+            return True
+        except:
+            return False
