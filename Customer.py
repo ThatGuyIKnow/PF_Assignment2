@@ -1,10 +1,15 @@
 class Customer():
     _discount_rate = 0.
 
-    def __init__(self, id: str, name: str, value: int = 0) -> None:
+    def __init__(self, id: str, name: str, value: float = 0) -> None:
         self._id = id
         self._name = name
-        self._value = value
+        self.value = value
+
+    def __iter__(self):
+        i = [self.id, self.name, self.discount_rate, self.value]
+        for v in i:
+            yield v
 
     @property
     def id(self):
@@ -12,14 +17,10 @@ class Customer():
     @property
     def name(self):
         return self._name
-    @property
-    def value(self):
-        return self._value
 
-    @classmethod
     @property
-    def discount_rate(cls):
-        return cls._discount_rate
+    def discount_rate(self):
+        return Customer._discount_rate
 
 
     def get_discount(self, price):

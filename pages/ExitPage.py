@@ -1,5 +1,5 @@
-from pages.Menu import AbstractPage
 
+from pages.AbstractPage import AbstractPage
 
 class ExitPage(AbstractPage):
     def __init__(self) -> None:
