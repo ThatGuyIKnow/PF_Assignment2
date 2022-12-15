@@ -19,10 +19,10 @@ class Bundle():
         return self._name
     @property
     def price(self):
-        prices = map(lambda x: x['price'], self.products)
+        prices = list(map(lambda x: x['price'], self.products))
         if None in prices:
             return None
-        return sum() * (1-self.discount)
+        return sum(prices) * (1-self.discount)
     
     def __eq__(self, __o: object) -> bool:
         return self._id == __o.id

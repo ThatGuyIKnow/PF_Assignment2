@@ -8,15 +8,22 @@ from VIPMember import VIPMember
 
 
 class Records():
-    def __init__(self, customer_file_path: str, product_file_path: str) -> None:
+    def __init__(self, customer_file_path: str, product_file_path: str, orders_file_path: str) -> None:
         self.customer_file_path = customer_file_path
         self.product_file_path = product_file_path
+        self.orders_file_path = orders_file_path
         try:
             self.customers = self.read_customers()
             self.products = None
             self.read_products()
         except Exception as e:
             raise IOError(e) from e
+        try:
+            self.orders = self.read_orders()
+        except Exception:
+            print('Cannot load the order file. Run as if there is no order previously.')
+            self.orders = []
+        
         self.next_customer_id = self.get_last_customer_id() + 1
         self.next_product_id = self.get_last_product_id() + 1
 
@@ -65,6 +72,15 @@ class Records():
         print(args[2:-1])
         return Bundle(id, name, products, stock)
 
+    def read_orders(self):
+        orders = []
+        with open(self.orders_file_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                args = line.split(', ')
+                customer, product, quantity, timestamp = args
+                orders.append(Order(customer, product, quantity, timestamp=timestamp))
+        return orders
+
     def csv_reader(self, file_name):
         try:
             with open(file_name, 'r', encoding='utf-8') as f:
@@ -73,12 +89,25 @@ class Records():
         except FileNotFoundError as e:
             print('Customer data file not found. Exiting...')
             raise e
+
     
-    def find_customer(self, query: str, search_in_name: bool = False):
-        return self.find_in_customers_or_products(query, search_in_name, self.customers)
-    
+    def find_customer(self, query: str, search_in_name: bool = None):
+        if search_in_name is not None:
+            return self.find_in_customers_or_products(query, search_in_name, self.customers)
+
+        customer = self.find_in_customers_or_products(query, True, self.customers)
+        if customer is None:
+            customer = self.find_in_customers_or_products(query, False, self.customers)
+        return customer
+
     def find_product(self, query: str, search_in_name: bool = False):
-        return self.find_in_customers_or_products(query, search_in_name, self.products)
+        if search_in_name is not None:
+            return self.find_in_customers_or_products(query, search_in_name, self.products)
+
+        product = self.find_in_customers_or_products(query, True, self.products)
+        if product is None:
+            product = self.find_in_customers_or_products(query, False, self.products)
+        return product
 
     def find_in_customers_or_products(self, query: str, search_in_name: bool, arr_list):
         field = (lambda x: x.name) if search_in_name else (lambda x: x.id)
@@ -137,7 +166,7 @@ class Records():
 
 
     def execute_order(self, order: Order):
-        customer, product, quantity, purchased_VIP = order
+        customer, product, quantity, purchased_VIP, _ = order
         customer.value += customer.get_discount(order.total_price)[1]
         if purchased_VIP:
             customer.value += VIPMember.membership_cost
@@ -146,6 +175,7 @@ class Records():
 
         self.update_customer_info(customer)
         self.update_product_info(product)
+        self.append_order(order)
     
     def update_customer_info(self, customer: Customer):
         temp_file_path, file_extension = os.path.splitext(self.customer_file_path)
@@ -186,3 +216,7 @@ class Records():
             products = ', '.join(product_ids)
             print(product_ids)
             file.write(f'{id}, {name}, {products}, {stock}\n')
+
+    def append_order(self, order: Order):
+        with open(self.orders_file_path, 'a', encoding='utf-8') as f:
+            f.write(f'{order.customer.id}, {order.product.id}, {order.quantity}, {order.timestamp}\n')

@@ -1,8 +1,8 @@
 from Member import Member
 
 class VIPMember(Member):
-    _discount_threshold = 1000
-    _membership_cost = 200
+    _discount_threshold = 1000.
+    _membership_cost = 200.
 
     def __init__(self, id: str, name: str, value: float = 0, discount_rate: float = 0.1) -> None:
         super().__init__(id, name, value)
@@ -11,6 +11,11 @@ class VIPMember(Member):
     @property
     def discount_rate(self):
         return self._discount_rate
+
+    @classmethod
+    @property
+    def discount_threshold(cls):
+        return cls._discount_threshold
 
     def get_discount(self, price):
         discount_rate = self.discount_rate
