@@ -10,7 +10,7 @@ class DisplayOrdersCustomer(AbstractPage):
     def run(self) -> int:
 
         
-        customer_id = input('Please type the name or ID of the customer you would like to adjust: ')
+        customer_id = input('Please type the name or ID of the customer you would like to view orders of: ')
         customer = self.records.find_customer(customer_id)
         if customer is None:
             print(f'Invalid customer!')

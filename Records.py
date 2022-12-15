@@ -8,7 +8,7 @@ from VIPMember import VIPMember
 
 
 class Records():
-    def __init__(self, customer_file_path: str, product_file_path: str, orders_file_path: str) -> None:
+    def __init__(self, customer_file_path: str, product_file_path: str, orders_file_path: str = None) -> None:
         self.customer_file_path = customer_file_path
         self.product_file_path = product_file_path
         self.orders_file_path = orders_file_path
@@ -52,7 +52,6 @@ class Records():
         products = self.csv_reader(self.product_file_path)
         bundle_list = [self.__create_bundle(args) for args in products if args[0][0] == 'B']
         self.products += bundle_list
-        print(bundle_list[0].products)
         
 
     def __create_product(self, id: str, name: str, price: str, quantity: str):
@@ -69,7 +68,6 @@ class Records():
         products = list(map(self.find_product, args[2:-1]))
         products = [{'id': p.id, 'price': p.price} for p in products]
         stock = int(args[-1])
-        print(args[2:-1])
         return Bundle(id, name, products, stock)
 
     def read_orders(self):
@@ -214,9 +212,10 @@ class Records():
             id, name, products, stock = product
             product_ids = [p['id'] for p in products]
             products = ', '.join(product_ids)
-            print(product_ids)
             file.write(f'{id}, {name}, {products}, {stock}\n')
 
     def append_order(self, order: Order):
+        if self.orders_file_path is None:
+            return
         with open(self.orders_file_path, 'a', encoding='utf-8') as f:
             f.write(f'{order.customer.id}, {order.product.id}, {order.quantity}, {order.timestamp}\n')
